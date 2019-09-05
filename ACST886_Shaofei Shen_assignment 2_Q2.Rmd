@@ -1,0 +1,202 @@
+---
+title: "shaofei Shen_45503745_assignment 2_Q2"
+author: "Shaofei Shen"
+date: "2019/9/5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Q2 
+#### inpute data 
+```{r}
+age_group<-c("40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84","85-89","90-94")
+Ex_4<-c(15518,19428,21594,21890,19174,15775,11414,6993,3276,1096,201)
+Actdx<-c(65,144,219,378,465,557,685,644,471,217,67)
+expdx<-c(73.9,134.6,223.9,346.3,468.1,600.2,675.5,637.4,458.7,240.6,61.4)
+expqx<-expdx/Ex_4
+```
+calculate the varaince of Dx 
+```{r}
+VarDeaths<-expdx*(1-expqx)
+VarDeaths
+sum(VarDeaths)
+```
+we caulculate Z-score $(\theta_x-d_x)/(E_xp_xq_x)^{0.5}$
+```{r}
+Zx<-(Actdx-expdx)/sqrt(VarDeaths)
+Zx
+```
+
+
+
+#### chi^2 test 
+$\chi^2=\sum Z_x^2$
+```{r}
+chi_2 <- Zx^2
+chi_2
+sum(chi_2)
+```
+calculate the critical value at 5% level of significant 
+```{r}
+#df is the number of groups minus a number that depends on graduation, which is 11-1=10 
+qchisq(.95,10)
+```
+$\chi^2_{crit}>\chi^2_{cal}$ there is no suffeicient evidence to reject $H_0$. we conclude that there is no difference between expected and actual data.The expected are with good fit.
+HOwever, chisq test is a summation. A large value of a period and a small value of a period can cancel out the affect and get a acceptable test statistic. not look at the individual behaviour on the curve. now we can apply individual standardised deviations test.
+
+
+#### individual standardised deviations 
+For the z-score we have, how many do we expect in various range (-$\infty$,-3)(-3,-2)(-2,-1) ect. 
+find out the probability in each range 
+```{r}
+r<-c()
+r[1]<-pnorm(-3)
+r[2]<-pnorm(-2)-pnorm(-3)
+r[3]<-pnorm(-1)-pnorm(-2)
+r[4]<-pnorm(0)-pnorm(-1)
+r[5]<-pnorm(1)-pnorm(0)
+r[6]<-pnorm(2)-pnorm(1)
+r[7]<-pnorm(3)-pnorm(2)
+r[8]<-1-pnorm(3)
+r
+```
+Using population multiply by the probability to calculate how may observation are expected to lie on each range
+```{r}
+Er<-11*r
+Er
+```
+```{r}
+Zx<(-3)
+Ar <- c()
+Ar[1] <- sum(Zx<(-3),na.rm=TRUE)
+##put in a vector 
+v1 <- (Zx>-3)
+```
+calculate how many actual bservation are lie on each range 
+```{r}
+Ar[2]<- sum((Zx>-3)*(Zx<(-2)),na.rm=TRUE)
+Ar[3]<- sum((Zx>-2)*(Zx<(-1)),na.rm=TRUE)
+Ar[4]<- sum((Zx>-1)*(Zx<(0)),na.rm=TRUE)
+Ar[5]<- sum((Zx>0)*(Zx<(1)),na.rm=TRUE)
+Ar[6]<- sum((Zx>1)*(Zx<(2)),na.rm=TRUE)
+Ar[7]<- sum((Zx>2)*(Zx<(3)),na.rm=TRUE)
+Ar[8]<- sum((Zx>3),na.rm=TRUE)
+Ar 
+```
+Since there is empty cell in the data, we need to group it.Group the extreme z-score together to guarantee threre is at least one in the range. there are 4 groups. Using$\sum \frac{(A-E)^2}{E}$ to calculate the test statistic 
+```{r}
+t1<-c()
+t1[1]<-(sum(Ar[1:3])- sum(Er[1:3]))^2/sum(Er[1:3])
+t1[1]
+t1[2]<-(Ar[4]-Er[4])^2/Er[4]
+t1[2]
+t1[3]<-(Ar[5]-Er[5])^2/Er[5]
+t1[3]
+t1[4]<-(sum(Ar[6:8])-sum(Er[6:8]))^2/sum(Er[6:8])
+t1[4]
+t1
+sum(t1)
+```
+the test follow a Chisq distribution A critical value is chi-sq with 3 df (one less than the number of Cells in the calculation of chi-sq)
+```{r}
+qchisq(.95,3)
+```
+$\chi^2_{crit}=7.8147$,$\chi^2_{cal=2.45344$
+$\chi^2_{crit}>\chi^2_{cal}$, there is no sufficient evidence to reject$H_0$. we conclude that there is no pattern in the error term. The expected data are with good fit.
+
+#### cummlative
+test statistic:$\sum_x \frac{d_x-E_xq_x}{(\sum_x E_xq_x(1-q_x))^{0.5}}$, where expexcted death is equal to $E_xq_x$
+```{r}
+t_cal<-sum(Actdx-expdx)/sqrt(sum(VarDeaths))
+t_cal
+```
+The test statistic follow a standard normal distribution 
+```{r}
+qnorm(0.025)
+```
+$t_{calc}=-0.1415$, $t_{crit}=-1.96$ $t_{calc}>t_{crit}$, there is not sufficient evidence to reject $H_0$
+We conclude that the adherence to data is acceptable. 
+
+
+#### sign test 
+```{r}
+a=length(Zx)
+i=1
+c=0
+while (i<=a) {
+  if(Zx[i]>0){
+    c=c+1
+  }
+  i=i+1
+}
+print(c)
+```
+We can see that there are 6 Z-score are possitive and 5 are negative, which is equally distributed  
+We can apply a binomial test 
+```{r}
+binom.test(c, 11, p=.5, alternative = "two.sided")
+```
+The P-value is one, which means no sufficient evidence to reject $H_0$ and conclude the number of each sign of Z-score are with similar.
+
+
+#### grouping of sign test 
+```{r}
+n=4
+n1<-sum(Zx>0)
+n2<-sum(Zx<0)
+fn<-function(k){
+  sum(choose(n1-1,k-1)*choose(n2+1,k)/choose(n1+n2,n1))
+}
+temp<-fn(1)
+for (k in 1:11){
+  if(temp<0.05){
+    temp<-temp+fn(k)
+}else{
+  break("")
+}}
+k
+```
+K is the smallest possible value for $\sum_{j=1}^k {n_1-1\choose j-1}{n_2+1\choose j}/{n_1+n_2\choose n_1}\geq 0.05$ We have 4 possitive group and 4 negative group.
+there is not sufficient evidence to reject $H_0$. We conclude that the pattern of sign of the data are equally distributed.
+
+
+
+#### serial correlation 
+under null hypothesis x Z ’s are iid,N(0,1) and so sample serial correlation coefficient has a zero mean and isdistributed as $N(0,1/(m-1))$ when m is large
+```{r}
+#generate a new vetor exclude the last value of the Zx
+Zx_1<-Zx[1:10]
+Z_1<-sum(Zx_1/10)
+#genertae a new vetor exclude the first value of the Zx
+Zx_2<-Zx[2:11]
+Z_2<-sum(Zx_2/10)
+Z_1
+Z_2
+```
+```{r}
+nu<-sum((Zx_1-Z_1)*(Zx_2-Z_2))*sqrt(10)
+de<-sqrt(sum((Zx_1-Z_1)^2)*sum((Zx_2-Z_2)^2))
+tsc_cal<-nu/de
+tsc_cal
+```
+Since $t_{calc}>t_{crit}$,there is not suffiecient evidence to reject $H_0$. We conclude that there is serial correlation between standard errors.
+
+
+#### smooth test 
+```{r}
+#### smooth test
+d1<- diff(expqx)
+d2<-diff(d1)
+#fing the third difference 
+d3<-diff(d2)
+sm<-abs(d3*(7^3))
+sm
+expqx_1<-expqx[1:8]
+expqx_1
+smooth <- (sm<(expqx_1))
+smooth
+```
+The third deifference after multiple by $7^3$ are all greater than expected $q_x$. we conclude that the expected graduation is not smooth.
